@@ -1,8 +1,5 @@
 <?php
     define('EMPTY_STRING','');
-    define('FROM_MIDDLE_OR_END',true);
-    define('FROM_FRONT',false);
-    
     
     class PHPLeafNode{
         
