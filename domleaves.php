@@ -238,21 +238,30 @@
             }
 	   return $html;
         }
-	public function getValues($html1){
+	public function getLeafNodes($html){
+            $html1 = $this->removeNoise($html);
+            $html1 = $this->removeWhitespaceOrNewline($html1);
+            $html1 = $this->correctDom($html1);
             
-            $noisestart = microtime(true);
-            $html = $this->removeNoise($html1);
-            echo "Noise takes = ".(microtime(true)-$noisestart)."\n";
-                
-            $whitespacestart = microtime(true);
-            $html = $this->removeWhitespaceOrNewline($html);
-            echo "Whitespace removal takes = ".(microtime(true)-$whitespacestart)."\n";
+	    $children = $this->getChildren($html1);
             
-            $correctdomstart = microtime(true);
-            $html = $this->correctDom($html);
-            echo "CorrectDom takes = ".(microtime(true)-$correctdomstart)."\n\n";
-          
+            $size = count($children);
+            for($i=0;$i<$size;$i++){
+                $this->getLeaf($children[$i]);
+            }
+            
+            return $this->result;
 	}
+        public function file_url_contents($url){
+            $crl = curl_init();
+            $timeout = 30;
+            curl_setopt ($crl, CURLOPT_URL,$url);
+            curl_setopt ($crl, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt ($crl, CURLOPT_CONNECTTIMEOUT, $timeout);
+            $ret = curl_exec($crl);
+            curl_close($crl);
+            return $ret;
+        }
     }
 
 ?>  
