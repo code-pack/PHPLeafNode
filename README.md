@@ -8,7 +8,7 @@ How to Use
 
     <?php 
        $url = <your url>
-	   $leafgetter = new DomLeaves();
+	   $leafgetter = new PHPLeafNode();
 	   $leaves = $leafgetter->getLeafNodes($leafgetter->file_url_contents($url));
        
        print_r($leaves);
