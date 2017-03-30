@@ -18,7 +18,7 @@ DomLeaves only accepts HTML in which leaves are the targets to be obtained.
            </html>
     HTML;
 
-        $leaves = new Domleaves();
+        $leaves = new DomLeaves();
         $leaves->getValues($html); //in array
         
         // display leaves and observe how you can get various data from array of leaves
