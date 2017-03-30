@@ -4,7 +4,7 @@
     define('FROM_FRONT',false);
     
     
-    class DomLeaves{
+    class PHPLeafNode{
         
         public $result = array();
         
@@ -37,7 +37,7 @@
             return $html1;
         }
 	public function hasChildNode($html){
-            $tags = DomLeaves::getAllTag($html);
+            $tags = PHPLeafNode::getAllTag($html);
             $result = false;
             if(!empty($tags)){
                 unset($tags[0][0]);
@@ -83,8 +83,8 @@
             }
         }
 	public function stripHtml($html){
-            $noncontainertag = DomLeaves::getNonContainerTags();
-		    $tags = DomLeaves::getAllTag($html);
+            $noncontainertag = PHPLeafNode::getNonContainerTags();
+		    $tags = PHPLeafNode::getAllTag($html);
 			$start = $tags[0][0];
 			$html1 = substr($html,strlen($start),strlen($html));
 			if(preg_match("~<(\w+)\s*~is",$start,$matches)){
@@ -103,11 +103,11 @@
 	}
 	public function getChildren($html1){
             $html = $html1;
-            $tags = DomLeaves::getAllTag($html);
+            $tags = PHPLeafNode::getAllTag($html);
             $size = count($tags[0]);
             $children = array();
             
-            $noncontainertag = DomLeaves::getNonContainerTags();
+            $noncontainertag = PHPLeafNode::getNonContainerTags();
             
             if($size>1){
 		for($i=0;$i<$size;$i++){
@@ -128,7 +128,7 @@
                                     if(preg_match("~".$end."~is",$tags[0][$j],$matches1)){
                                         $close--;
                                         if($close==0){
-                                            $result = DomLeaves::getChildrenTagHTML($tags[0][$i],$html,$tags[1][$j],$openOffset);
+                                            $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,$tags[1][$j],$openOffset);
                                             $children[] = $result["children"];
                                             $html = $result["html"];
                                             $tags = $result["tags"];
@@ -140,7 +140,7 @@
                                     }
                                 }
                                 if($j==($size-1)&&$close>0){
-                                    $result = DomLeaves::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
+                                    $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
                                     $children[] = $result["children"];
                                     $html = $result["html"];
                                     $tags = $result["tags"];
@@ -152,7 +152,7 @@
                             }
                         }
                         else{
-                            $result = DomLeaves::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
+                            $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
                             $children[] = $result["children"];
                             $html = $result["html"];
                             $tags = $result["tags"];
@@ -181,7 +181,7 @@
             $str = substr($html,$openOffset,$endOffset);
             $arr["children"] = $str;
             $arr["html"] = substr($html,strlen($str));
-            $arr["tags"] = DomLeaves::getAllTag($html);
+            $arr["tags"] = PHPLeafNode::getAllTag($html);
             return $arr;
         }
         public function getContainerLeafArray(){
