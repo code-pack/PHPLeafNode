@@ -1,25 +1,17 @@
-# Domleaves
+# PHPLeafNode
 
 This a Simple PHP Code to help Developers to avoid the hassles of getting element values; particularly when scrapping the HTML Document from the Web.
 
-DomLeaves only accepts HTML in which leaves are the targets to be obtained.
+PHPLeafNode accepts HTML string and return leaf nodes in array form.
 
-# How to Use
+How to Use
 
     <?php 
-        $html = <<HTML
-
-           <!DOCTYPE>
-           <html>
-              .......
-             <body>
-                   ....
-             </body>
-           </html>
-    HTML;
-
-        $leaves = new DomLeaves();
-        $leaves->getValues($html); //in array
+       $url = <your url>
+	   $leafgetter = new DomLeaves();
+	   $leaves = $leafgetter->getLeafNodes($leafgetter->file_url_contents($url));
+       
+       print_r($leaves);
         
         // display leaves and observe how you can get various data from array of leaves
       
