@@ -4,7 +4,7 @@ This a Simple PHP Code to help Developers to avoid the hassles of getting elemen
 
 PHPLeafNode accepts HTML string and return leaf nodes in array form.
 
-How to Use
+# How to Use
 
     <?php 
        $url = <your url>
