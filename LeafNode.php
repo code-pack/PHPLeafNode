@@ -3,7 +3,7 @@
     
     class PHPLeafNode{
         
-        public $result = array();
+        private $result = array();
         
 	public function removeWhitespaceOrNewline($html){
             $html1 = preg_replace('~^[\r\n\s\t]+~is',EMPTY_STRING,$html);
