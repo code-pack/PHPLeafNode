@@ -8,10 +8,9 @@ PHPLeafNode accepts HTML string and return leaf nodes in array form.
 
     <?php 
        $url = <your url>
-	   $leafgetter = new PHPLeafNode();
-	   $leaves = $leafgetter->getLeafNodes($leafgetter->file_url_contents($url));
-       
-       print_r($leaves);
+	   
+	$leafnode = new PHPLeafNode($url);
+	print_r($leafnode->getValues());
         
         // display leaves and observe how you can get various data from array of leaves
       
