@@ -1,17 +1,63 @@
 <?php
     define('EMPTY_STRING','');
+    define('STRIP_UPPER_TAG',true);
+    define('DO_NOT_STRIP_UPPER_TAG',false);
     
-    class PHPLeafNode{
+    class Scrapified{
         
-        private $result = array();
+        private $html;
+        private $tags = array();
+        public $result = array();
         
-	public function removeWhitespaceOrNewline($html){
+        public function __construct($html,$flag){
+			if($flag==DO_NOT_STRIP_UPPER_TAG){
+                //$noisestart = microtime(true);
+                $this->html = self::removeNoise($html);
+                //echo "Noise takes = ".(microtime(true)-$noisestart)."\n";
+                
+                //$whitespacestart = microtime(true);
+                $this->html = self::removeWhitespaceOrNewline($this->html);
+                //echo "Whitespace removal takes = ".(microtime(true)-$whitespacestart)."\n";
+                
+                /*
+                    functions to correct entire DOM; particularly in situations where there will be 
+                    any word between <a>any word</b>, <a>any word<a>, <a>any word<b>, </b>anyword</b>, </b>any word,
+                    any word<a>, </b>any word </a>, </b>any word<a>, </b>any word<b>
+                */
+                
+                //$correctdomstart = microtime(true);
+                self::correctDom1();
+                self::correctDom2();
+                self::correctDom3();
+                self::correctDom4();
+                self::correctDom5();
+                self::correctDom6();
+                self::correctDom7();
+                //echo "CorrectDom takes = ".(microtime(true)-$correctdomstart)."\n";
+                
+                //$getalltagstart = microtime(true);
+                $this->tags = self::getAllTag($this->html);
+                //echo "Getalltag takes = ".(microtime(true)-$getalltagstart)."\n";
+                
+			}
+			else{
+                $html1 = self::stripHtml($html,$flag);
+                $this->tags = self::getAllTag($html1);
+                $this->html = $html1;
+		    }
+		}
+        public function scraperSet($html,$flag){
+            $html1 = $this->stripHtml($html,$flag);
+            $this->tags = $this->getAllTag($html1);
+            $this->html = $html1;
+        }
+		public function removeWhitespaceOrNewline($html){
             $html1 = preg_replace('~^[\r\n\s\t]+~is',EMPTY_STRING,$html);
             $html1 = preg_replace('~[\r\n\s\t]+$~is',EMPTY_STRING,$html1);
             $html1 = preg_replace('~>[\r\n\s\t]+([^<]*)[\r\n\s\t]+<~is','>$1<',$html1);
             $html1 = preg_replace('~>[\r\n\s\t]+<~is','><',$html1);
             return $html1;
-	}
+		}
         public function removeNoise($html){
             $html1 = preg_replace('~\&lt\;~is','<',$html);
             $html1 = preg_replace('~\&gt\;~is','>',$html1);
@@ -31,224 +77,288 @@
             $html1 = preg_replace('~<![^>]*>~is',EMPTY_STRING,$html1);
             $html1 = preg_replace('~<link[^>]*>~is',EMPTY_STRING,$html1);
             $html1 = preg_replace('~</?br\s*/?>~is',EMPTY_STRING,$html1);
+            $html1 = preg_replace('~=\s*\'\s*\'~is','=\'.\'',$html1); //add . into attributes with empty value '' to avoid error when processing correctDom1
+            $html1 = preg_replace('~=\s*"\s*"~is','="."',$html1); //add . into attributes with empty value "" to avoid error when processing correctDom1
             return $html1;
         }
-	public function hasChildNode($html){
-            $tags = PHPLeafNode::getAllTag($html);
+		public function hasChildNode($html){
+            $tag = $this->getAllTag($html);
+            unset($tag[0]);
+            $tag = array_values($tag);
             $result = false;
-            if(!empty($tags)){
-                unset($tags[0][0]);
-                unset($tags[1][0]);
-                $tags[0] = array_values($tags[0]);
-                $tags[1] = array_values($tags[1]);
-                foreach($tags[0] as $k=>$v){
-                    if(preg_match('~<\w+\s*~is',$v,$mtch)){
-                        $result = true;
-                        break;
-                    }
+            foreach($tag as $k=>$v){
+                if(preg_match('~<[\w]+[^>]*>~is',$v,$mtch)){
+                    $result = true;
+                    break;
                 }
             }
             return $result;
-	}
+		}
         public function getLeaf($el){
             $tag = $this->getAllTag($el);
-            if(
-                (
-                    //containers with or without nodes but seen as leafs
-                    preg_match('~<video\s*~is',$tag[0][0],$mm1)
-                    ||preg_match('~<svg\s*~is',$tag[0][0],$mm2)
-                    ||preg_match('~<canvas\s*~is',$tag[0][0],$mm3)
-                    ||preg_match('~<audio\s*~is',$tag[0][0],$mm4)
-                    ||preg_match('~<a(?!\w+)~is',$tag[0][0],$mm5)
-                )
-                &&$this->hasChildNode($el)
-            ){
+            if((preg_match('~<video[^>]*>~is',$tag[0],$mm1)||preg_match('~<svg[^>]*>~is',$tag[0],$mm2)||preg_match('~<canvas[^>]*>~is',$tag[0],$mm4))
+            ||(preg_match('~<a\s+([^>]*)>~is',$tag[0],$mm3)&&$this->hasChildNode($el))){
                 $this->result[] = $el;
             }
             else{
                 if($this->hasChildNode($el)){
-					$el = $this->stripHtml($el);
-					$children = $this->getChildren($el);
-					$size = count($children);
-					for($i=0;$i<$size;$i++){
+                    $this->scraperSet($el,STRIP_UPPER_TAG);
+                    $children = $this->getChildren();
+                    $size = count($children);
+                    for($i=0;$i<$size;$i++){
                         $this->getLeaf($children[$i]);
-					}
+                    }
                 }
                 else{
                     $this->result[] = $el;
                 }
             }
         }
-	public function stripHtml($html){
-            $noncontainertag = PHPLeafNode::getNonContainerTags();
-		    $tags = PHPLeafNode::getAllTag($html);
-			$start = $tags[0][0];
-			$html1 = substr($html,strlen($start),strlen($html));
-			if(preg_match("~<(\w+)\s*~is",$start,$matches)){
-                if(!in_array($matches[1],$noncontainertag,true)){
-                    if(preg_match('~</'.$matches[1].'>$~is',$html1,$m)){
-                        $end = "</".$matches[1].">";
-                        $mtch = substr($html1,0,(strlen($html1)-strlen($end)));
-                        return self::removeWhitespaceOrNewline($mtch);
-                    }
-                    else
-                        return $html1;
+		public function stripHtml($html,$flag){
+			if($flag==STRIP_UPPER_TAG){
+				$tags = $this->getAllTag($html);
+				$start = $tags[0];
+				$html1 = substr($html,strlen($start),strlen($html));
+				if(preg_match("~<(\w+)[^>]*>~is",$start,$matches)){
+				    $end = "</".$matches[1].">";
+				    $mtch = substr($html1,0,(strlen($html1)-strlen($end)));
+				    return $this->removeWhitespaceOrNewline($mtch);
                 }
-            }
-            else
-                return $html1;
-	}
-	public function getChildren($html1){
-            $html = $html1;
-            $tags = PHPLeafNode::getAllTag($html);
-            $size = count($tags[0]);
+                else
+                    return $html1;
+			}
+		}
+		public function getChildren(){
+            $size = count($this->tags);
             $children = array();
-            
-            $noncontainertag = PHPLeafNode::getNonContainerTags();
+            $tags = $this->tags;
+            $html = $this->html;
             
             if($size>1){
-		for($i=0;$i<$size;$i++){
-		   if(preg_match("~<(\w+)\s*~is",$tags[0][$i],$matches)){
-                        $start1 = $matches[1];
-                        $openOffset = $tags[1][$i];
-                        if(!in_array($start1,$noncontainertag,true)){
-                            $end = "</".$start1.">";
+				for($i=0;$i<$size;$i++){
+					if(preg_match("~<(\w+)[^>]*>~is",$tags[$i],$matches)){
+                        $start = $matches[1];
+                        if($size>1){
+                            $end = "</".$start.">";
                             $close = 1;
                             for($j=($i+1);$j<$size;$j++){
-                                if(preg_match("~<(\w+)\s*~is",$tags[0][$j],$matches1)){
-                                    $start2 = $matches1[1];
-                                    if($start1==$start2){
+                                if(preg_match("~<(\w+)[^>]*>~is",$tags[$j],$matches1)){
+                                    $start1 = $matches1[1];
+                                    if($start1==$start){
                                         $close++;
                                     }
                                 }
                                 else{
-                                    if(preg_match("~".$end."~is",$tags[0][$j],$matches1)){
+                                    if(preg_match("~".$end."~is",$tags[$j])){
                                         $close--;
                                         if($close==0){
-                                            $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,$tags[1][$j],$openOffset);
-                                            $children[] = $result["children"];
-                                            $html = $result["html"];
-                                            $tags = $result["tags"];
-                                            if(!empty($tags[0])) $size = count($tags[0]);
-                                            else $size = 0;
-                                            $i = -1;
+                                            $i = $j;
+                                            $_array = explode($end,$html);
+                                            $sum = 0;
+                                            $str='';
+                                            $_size = count($_array);
+                                            for($index=0;$index<$_size;$index++){
+                                                $s = preg_replace('~\s*~','',$_array[$index]);
+                                                $c_tag = 0;
+                                                if(!empty($s)){
+                                                    $tag = $this->getAllTag($_array[$index]);
+                                                    $c_tag = count($tag);
+                                                }
+                                                $str=$str.$_array[$index].$end;
+                                                $sum+=$c_tag+1;
+                                                if($sum==($i+1)){
+                                                    if(preg_match('~^<'.$start.'[^>]*>(.*?)'.$end.'~is',$str,$match)){
+                                                        $children[] = $str;
+                                                        $html = substr($html,strlen($str),strlen($html));
+                                                        for($k=0;$k<=$i;$k++){
+                                                            unset($tags[$k]);
+                                                        }
+                                                        $tags = array_values($tags);
+                                                        $i = -1;
+                                                        $size = count($tags);
+                                                    }
+                                                    break;
+                                                }
+                                            }
                                             break;
                                         }
                                     }
                                 }
                                 if($j==($size-1)&&$close>0){
-                                    $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
-                                    $children[] = $result["children"];
-                                    $html = $result["html"];
-                                    $tags = $result["tags"];
-                                    if(!empty($tags[0])) $size = count($tags[0]);
-                                    else $size = 0;
+                                    $children[] = $tags[$i];
+                                    $html = substr($html,strlen($tags[$i]),strlen($html));
+                                    unset($tags[$i]);
+                                    $tags = array_values($tags);
+                                    $size = count($tags);
                                     $i = -1;
+                                    $close = 0;
                                     break;
                                 }
                             }
                         }
                         else{
-                            $result = PHPLeafNode::getChildrenTagHTML($tags[0][$i],$html,'',$openOffset);
-                            $children[] = $result["children"];
-                            $html = $result["html"];
-                            $tags = $result["tags"];
-                            if(!empty($tags[0])) $size = count($tags[0]);
-                            else $size = 0;
-                            $i = -1;
-                            break;
+                            $children[] = $tags[$i];
+                            $html = substr($html,strlen($tags[$i]),strlen($html));
+                            unset($tags[$i]);
+                            $tags = array_values($tags);
+                            $size = count($tags);
+                            $close = 0;
+                        }
+					}
+                    else{
+                        $html = substr($html,strlen($tags[$i]),strlen($html));
+                        unset($tags[$i]);
+                        $tags = array_values($tags);
+                        $i = -1;
+                        $size = count($tags);
+                    } 
+				}
+			}
+			else{
+                if(!preg_match('~</\w+>~is',$tags[0],$mm))
+				    $children[] = $tags[0];
+            }
+            
+            return $children;
+		}
+		public function getAllTag($html){
+            $tags = array();
+			
+			if(preg_match_all('~(?!<\s*>)\<(?:(?>[^<>]+)|(?R))*\>~im',$html,$matchall,PREG_SET_ORDER)){
+				foreach($matchall as $m){
+					$tags[] = $m[0];
+				}
+			}
+			else
+				$tags[] = $html;
+            return $tags;
+		}
+        public function correctDom1(){
+            try{
+                //expression to get anything within ='anything' or ="anything" followed by " or '
+                if(preg_match_all('~((?<==\')(.(?!\'))*(\W|\w*))\'|((?<==")(.(?!"))*(\W|\w*))"~im',$this->html,$matchall,PREG_SET_ORDER)){
+                    foreach($matchall as $m){ //loop each match
+                        if(preg_match('~\<~is',$m[0],$mtch1)||preg_match('~\>~is',$m[0],$mtch2)){ //if match contains < or >, also ignore match without < or >
+                            //get ending character which may be " or '
+                            $end = $m[0][(strlen($m[0])-1)];
+                            $replace1 = substr($m[0],0,(strlen($m[0])-1)); //omit ending character
+                            //replace symbol to special character
+                            $replace = preg_replace('~"~is','&quot;',$replace1);
+                            $replace = preg_replace('~<~is','&lt;',$replace);
+                            $replace = preg_replace('~>~is','&gt;',$replace);
+                            $replace = preg_replace('~\'~is','&#39;',$replace);
+                            /*
+                            escape delimiter in preg_quote in order to reach end of delimiter, then do the replacement of
+                            old pattern to new replacement value
+                            */
+                            $this->html = preg_replace("~".preg_quote(($end.$replace1.$end),'~')."~is",$end.$replace.$end,$this->html);
                         }
                     }
                 }
             }
-	   else{
-                if(!preg_match('~</\w+>~is',$tags[0][0],$mm))
-		     $children[] = $tags[0][0];
+            catch(Exception $ex){
+                //echo $ex;
             }
-            
-            return $children;
-	}
-        public function getChildrenTagHTML($el,$html,$closeOffset,$openOffset){
-            $arr = array();
-            $endOffset1 = strlen($el);
-            if(empty($closeOffset))
-                $endOffset = $openOffset+$endOffset1;
-            else
-               $endOffset = $closeOffset+$endOffset1;
-            $str = substr($html,$openOffset,$endOffset);
-            $arr["children"] = $str;
-            $arr["html"] = substr($html,strlen($str));
-            $arr["tags"] = PHPLeafNode::getAllTag($html);
-            return $arr;
         }
-        public function getContainerLeafArray(){
-            return array(
-                'video','svg','canvas','audio','a'
-            );
-        }
-        public function getNonContainerTags(){
-            return array(
-                'br','hr','wbr','input','keygen','img','area','source','track','link','col','meta','base','basefont','embed','param',
-                'animate','animateTransform','circle','ellipse','feColorMatrix','feGaussianBlur','fePointLight','feComposite','feDistantLight',
-                'feSpotLight','rect','font-face-name','image','line','stop','path','polyline','use','mpath','polygon','tref'
-            );
-        }
-        public function getContainerTags(){
-            return array(
-                'html','title','body','h1','h2','h3','h4','h5','h6','p','acronym','abbr','address','b','bdi','bdo','big','blockquote',
-                'center','cite','code','del','dfn','em','font','i','ins','kbd','mark','meter','pre','progress','q','rp','rt','ruby',
-                's','samp','small','strike','strong','sub','sup','time','tt','u','var','form','textarea','button','select','optgroup',
-                'option','label','fieldset','legend','datalist','output','frame','frameset','noframes','iframe','map','canvas','figcaption',
-                'figure','audio','video','a','nav','ul','ol','li','dir','dl','dt','dd','menu','menuitem','table','caption','th','tr','td',
-                'thead','tbody','tfoot','colgroup','div','span','header','footer','main','section','article','aside','details','dialog',
-                'summary','head','applet','object','animateMotion','clipPath','defs','feDiffuseLighting','filter','desc','switch','foreignObject',
-                'tspan','text','g','font-face','font-face-src','missing-glyph','glyph','linearGradient','marker','mask','pattern','radialGradient',
-                'symbol','textPath','svg'
-            );
-        }
-	public function getAllTag($html){
-            $tags = array();
-            if(!empty($html)){
-                if(preg_match_all('~(?!<\s*>)\<(?:(?>[^<>]+)|(?R))*\>~is',$html,$matchall,PREG_OFFSET_CAPTURE|PREG_SET_ORDER)){
-                   foreach($matchall as $m){
-                       $tags[0][] = $m[0][0];
-                       $tags[1][] = $m[0][1];
-                   }
-                }
-                else{
-                    $tags[0][] = $html;
-                    $tags[1][] = 0;
-                }
-            }
-            return $tags;
-	}
-        public function correctDom($html1){
-			$html = $html1;
+        //function to enclose any word between <a>any word</b> into <span>any word<span> to form <a><span>any word</span></b>
+        public function correctDom2(){
             try{
-                if(preg_match('~^[^><]*~is',$html1,$m)){
-                    $s = preg_replace('~\s*~','',$m[0]);
-                    if(!empty($s))
-                        $html=preg_replace('~^([^><]+)~is','<untag>$1</untag>',$html1);
+                //negative lookbehind expression to match <a>any word</b>
+                if(preg_match_all('~(?!<(\w+)[^>]*>[^><]*</\1>)<(\w+)[^>]*>([^><]+)</\w+>~is',$this->html,$matchall,PREG_SET_ORDER)){
+                    foreach($matchall as $m){
+                        $tags = $this->getAllTag($m[0]); //get all tags
+                        $s = preg_replace('~\s*~','',$m[3]); //remove whitespace
+                        if(!empty($s)){ //is not empty then if length is greater than 0
+                            $str = $tags[0].'<span>'.$m[3].'</span>'.$tags[1]; //form <a><span>any word</span></b>
+                            $str = $this->removeWhitespaceOrNewline($str); //remove any whitespace or new line in new replacement value
+                            $this->html = str_replace($m[0],$str,$this->html); //replace <a>any word</b> to <a><span>any word</span></b>
+                        }
+                    }
                 }
             }
             catch(Exception $ex){
+                //echo $ex;
             }
-	   return $html;
         }
-	public function getLeafNodes($html){
-            $html1 = $this->removeNoise($html);
-            $html1 = $this->removeWhitespaceOrNewline($html1);
-            $html1 = $this->correctDom($html1);
-            
-	    $children = $this->getChildren($html1);
-            
-            $size = count($children);
-            for($i=0;$i<$size;$i++){
-                $this->getLeaf($children[$i]);
+        public function correctDom3(){
+            try{
+                if(preg_match_all('~(?=(</\w+>([^><]+)</\w+>))~is',$this->html,$matchall,PREG_SET_ORDER)){
+                    foreach($matchall as $m){
+                        $tags = $this->getAllTag($m[1]);
+                        $s = preg_replace('~\s*~','',$m[2]);
+                        if(!empty($s)){
+                            $str = $tags[0].'<span>'.$m[2].'</span>'.$tags[1];
+                            $str = $this->removeWhitespaceOrNewline($str);
+                            $this->html = str_replace($m[1],$str,$this->html);
+                        }
+                    }
+                }
             }
-            
-            return $this->result;
-	}
+            catch(Exception $ex){
+                //echo $ex;
+            }
+        }
+        public function correctDom4(){
+            try{
+                if(preg_match_all('~(?=(<\w+[^>]*>([^><]+)<\w+[^>]*>))~is',$this->html,$matchall,PREG_SET_ORDER)){
+                    foreach($matchall as $m){
+                        $tags = $this->getAllTag($m[1]);
+                        $s = preg_replace('~\s*~','',$m[2]);
+                        if(!empty($s)){
+                            $str = $tags[0].'<span>'.$m[2].'</span>'.$tags[1];
+                            $str = $this->removeWhitespaceOrNewline($str);
+                            $this->html = str_replace($m[1],$str,$this->html);
+                        }
+                    }
+                }
+            }
+            catch(Exception $ex){
+                //echo $ex;
+            }
+        }
+        public function correctDom5(){
+            try{
+                if(preg_match('~^[^><]+~is',$this->html,$m)){
+                    $s = preg_replace('~\s*~','',$m[0]);
+                    if(!empty($s))
+                        $this->html=preg_replace('~^([^><]+)~is','<span>$1</span>',$this->html);
+                }
+            }
+            catch(Exception $ex){
+                //echo $ex;
+            }
+        }
+        public function correctDom6(){
+            try{
+                if(preg_match_all('~</\w+>([^><]+)<\w+[^>]*>~is',$this->html,$matchall,PREG_SET_ORDER)){
+                    foreach($matchall as $m){
+                        $tags = $this->getAllTag($m[0]);
+                        $s = preg_replace('~\s*~','',$m[1]);
+                        if(!empty($s)){
+                            $str = $tags[0].'<span>'.$m[1].'</span>'.$tags[1];
+                            $str = $this->removeWhitespaceOrNewline($str);
+                            $this->html = str_replace($m[0],$str,$this->html);
+                        }
+                    }
+                }
+            }
+            catch(Exception $ex){
+                //echo $ex;
+            }
+        }
+        public function correctDom7(){
+            try{
+                if(preg_match('~=\'.\'~is',$this->html,$m)){
+                    $this->html = preg_replace('~=\'.\'~is','=\'\'',$this->html);
+                }
+                if(preg_match('~="."~is',$this->html,$m)){
+                    $this->html = preg_replace('~="."~is','=""',$this->html);
+                }
+            }
+            catch(Exception $ex){
+                //echo $ex;
+            }
+        }
         public function file_url_contents($url){
             $crl = curl_init();
             $timeout = 30;
@@ -259,6 +369,29 @@
             curl_close($crl);
             return $ret;
         }
-    }
-
+	}
+    
+    class PHPLeafNode extends Scrapified{
+        
+        public function __construct($url){
+            parent::__construct($this->file_url_contents($url),DO_NOT_STRIP_UPPER_TAG);
+        }
+        
+		public function getValues(){
+			$children = $this->getChildren();
+            
+            //$loopstart = microtime(true);
+            $size = count($children);
+            for($i=0;$i<$size;$i++){
+                $this->getLeaf($children[$i]);
+            }
+            //echo 'Loop takes = '.(microtime(true)-$loopstart)."\n";
+            
+            return $this->result;
+		}
+	}
+	
+	$leafnode = new PHPLeafNode('http://localhost/inf/brief_page.php');
+	print_r($leafnode->getValues());
+    
 ?>  
