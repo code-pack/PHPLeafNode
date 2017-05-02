@@ -381,17 +381,14 @@
 			$children = $this->getChildren();
             
             //$loopstart = microtime(true);
-            $size = count($children);
+                  $size = count($children);
             for($i=0;$i<$size;$i++){
                 $this->getLeaf($children[$i]);
             }
             //echo 'Loop takes = '.(microtime(true)-$loopstart)."\n";
             
             return $this->result;
-		}
 	}
-	
-	$leafnode = new PHPLeafNode('http://localhost/inf/brief_page.php');
-	print_r($leafnode->getValues());
+  }
     
 ?>  
