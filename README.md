@@ -1,4 +1,4 @@
-# HtmlLeafNode
+# PHPLeafNode
 
 This a Simple PHP Code to help Developers to avoid the hassles of getting element values; particularly when scrapping the HTML Document from the Web.
 
