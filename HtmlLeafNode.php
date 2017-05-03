@@ -371,7 +371,7 @@
 		}
 	}
 
-	class PHPLeafNode extends Scrapified{
+	class HtmlLeafNode extends Scrapified{
 
 		public function __construct($url){
 			parent::__construct($this->file_url_contents($url),DO_NOT_STRIP_UPPER_TAG);
