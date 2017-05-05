@@ -372,14 +372,19 @@
 			return $this->result;
 		}
 		public function file_url_contents($url){
-			$crl = curl_init();
-			$timeout = 30;
-			curl_setopt ($crl, CURLOPT_URL,$url);
-			curl_setopt ($crl, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt ($crl, CURLOPT_CONNECTTIMEOUT, $timeout);
-			$ret = curl_exec($crl);
-			curl_close($crl);
-			return $ret;
+			$c = curl_init($url);
+			curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false); //to overcome ssl error but insecure
+			$html = curl_exec($c);
+			if (curl_error($c))
+				die(curl_error($c));
+
+			// Get the status code
+			$status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+
+			curl_close($c);
+			
+           		 return $html;
 		}
 	}
 ?>  
