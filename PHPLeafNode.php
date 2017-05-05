@@ -269,7 +269,7 @@
 						$tags = $this->getAllTag($m[0]); //get all tags
 						$s = preg_replace('~\s*~','',$m[3]); //remove whitespace
 						if(!empty($s)){ //is not empty then if length is greater than 0
-							$str = $tags[0].'<span>'.$m[3].'</span>'.$tags[1]; //form <a><span>any word</span></b>
+							$str = $tags[0].'<notag>'.$m[3].'</notag>'.$tags[1]; //form <a><span>any word</span></b>
 							$str = $this->removeWhitespaceOrNewline($str); //remove any whitespace or new line in new replacement value
 							$this->html = str_replace($m[0],$str,$this->html); //replace <a>any word</b> to <a><span>any word</span></b>
 						}
@@ -287,7 +287,7 @@
 						$tags = $this->getAllTag($m[1]);
 						$s = preg_replace('~\s*~','',$m[2]);
 						if(!empty($s)){
-							$str = $tags[0].'<span>'.$m[2].'</span>'.$tags[1];
+							$str = $tags[0].'<notag>'.$m[2].'</notag>'.$tags[1];
 							$str = $this->removeWhitespaceOrNewline($str);
 							$this->html = str_replace($m[1],$str,$this->html);
 						}
@@ -305,7 +305,7 @@
 						$tags = $this->getAllTag($m[1]);
 						$s = preg_replace('~\s*~','',$m[2]);
 						if(!empty($s)){
-							$str = $tags[0].'<span>'.$m[2].'</span>'.$tags[1];
+							$str = $tags[0].'<notag>'.$m[2].'</notag>'.$tags[1];
 							$str = $this->removeWhitespaceOrNewline($str);
 							$this->html = str_replace($m[1],$str,$this->html);
 						}
@@ -321,7 +321,7 @@
 				if(preg_match('~^[^><]+~is',$this->html,$m)){
 					$s = preg_replace('~\s*~','',$m[0]);
 					if(!empty($s))
-						$this->html=preg_replace('~^([^><]+)~is','<span>$1</span>',$this->html);
+						$this->html=preg_replace('~^([^><]+)~is','<notag>$1</notag>',$this->html);
 				}
 			}
 			catch(Exception $ex){
@@ -335,7 +335,7 @@
 						$tags = $this->getAllTag($m[0]);
 						$s = preg_replace('~\s*~','',$m[1]);
 						if(!empty($s)){
-							$str = $tags[0].'<span>'.$m[1].'</span>'.$tags[1];
+							$str = $tags[0].'<notag>'.$m[1].'</notag>'.$tags[1];
 							$str = $this->removeWhitespaceOrNewline($str);
 							$this->html = str_replace($m[0],$str,$this->html);
 						}
