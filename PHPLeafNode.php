@@ -3,7 +3,7 @@
 	define('STRIP_UPPER_TAG',true);
 	define('DO_NOT_STRIP_UPPER_TAG',false);
 
-	class Scrapified{
+	class PHPLeafNode{
 
 		private $html;
 		private $tags = array();
@@ -359,24 +359,6 @@
 				//echo $ex;
 			}
 		}
-		public function file_url_contents($url){
-			$crl = curl_init();
-			$timeout = 30;
-			curl_setopt ($crl, CURLOPT_URL,$url);
-			curl_setopt ($crl, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt ($crl, CURLOPT_CONNECTTIMEOUT, $timeout);
-			$ret = curl_exec($crl);
-			curl_close($crl);
-			return $ret;
-		}
-	}
-
-	class PHPLeafNode extends Scrapified{
-
-		public function __construct($url){
-			parent::__construct($this->file_url_contents($url),DO_NOT_STRIP_UPPER_TAG);
-		}
-
 		public function getValues(){
 			$children = $this->getChildren();
 
@@ -389,6 +371,17 @@
 
 			return $this->result;
 		}
+		public function file_url_contents($url){
+			$crl = curl_init();
+			$timeout = 30;
+			curl_setopt ($crl, CURLOPT_URL,$url);
+			curl_setopt ($crl, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt ($crl, CURLOPT_CONNECTTIMEOUT, $timeout);
+			$ret = curl_exec($crl);
+			curl_close($crl);
+			return $ret;
+		}
 	}
+
     
 ?>  
