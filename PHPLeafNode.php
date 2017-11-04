@@ -372,13 +372,7 @@
 			return $this->result;
 		}
 		public function file_url_contents($url){
-			$ch = curl_init();
-			$timeout = 5;
-			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-			$html = curl_exec($ch);
-			curl_close($ch);
+			$html = file_get_contents($url);
 			
            		return $html;
 		}
