@@ -26,7 +26,7 @@
 				*/
 
 				//$correctdomstart = microtime(true);
-				self::correctDom1();
+				//self::correctDom1(); will be uncommented later, this requires multiprocessing with pthreads
 				self::correctDom2();
 				self::correctDom3();
 				self::correctDom4();
@@ -62,6 +62,9 @@
 			$html1 = preg_replace('~\&lt\;~is','<',$html);
 			$html1 = preg_replace('~\&gt\;~is','>',$html1);
 			$html1 = preg_replace('~\&quot\;~is','"',$html1);
+			$html1 = preg_replace('~<\s*code[^>]*>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*code\s*>~is',EMPTY_STRING,$html1);
+			$html1 = preg_replace('~<\s*code\s*>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*code\s*>~is',EMPTY_STRING,$html1);
+			$html1 = preg_replace('~<\s*code[^>]*[^/]>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*code\s*>~is',EMPTY_STRING,$html1);
 			$html1 = preg_replace('~<\s*script[^>]*>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*script\s*>~is',EMPTY_STRING,$html1);
 			$html1 = preg_replace('~<\s*script\s*>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*script\s*>~is',EMPTY_STRING,$html1);
 			$html1 = preg_replace('~<\s*script[^>]*[^/]>[\r\n\s\t]*.*?[\r\n\s\t]*<\s*/\s*script\s*>~is',EMPTY_STRING,$html1);
@@ -236,7 +239,7 @@
 		public function correctDom1(){
 			try{
 				//expression to get anything within ='anything' or ="anything" followed by " or '
-				if(preg_match_all('~((?<==\')(.(?!\'))*(\W|\w*))\'|((?<==")(.(?!"))*(\W|\w*))"~im',$this->html,$matchall,PREG_SET_ORDER)){
+				if(preg_match_all('~(((?<==\')(.(?!\'))*(\W|\w*))\')|(((?<==")(.(?!"))*(\W|\w*))\")~im',$this->html,$matchall,PREG_SET_ORDER)){
 					foreach($matchall as $m){ //loop each match
 						if(preg_match('~\<~is',$m[0],$mtch1)||preg_match('~\>~is',$m[0],$mtch2)){ //if match contains < or >, also ignore match without < or >
 							//get ending character which may be " or '
