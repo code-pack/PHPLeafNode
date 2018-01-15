@@ -27,3 +27,5 @@ PHPLeafNode accepts HTML string and return leaf nodes in array form.
         
         // display leaves and observe how you can get various data from array of leaves
     ?>
+    
+[![Made in Nigeria](https://img.shields.io/badge/made%20in-nigeria-008751.svg?style=flat-square)](https://github.com/acekyd/made-in-nigeria)
